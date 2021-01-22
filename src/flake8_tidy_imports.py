@@ -39,6 +39,14 @@ class ImportChecker:
             help="Ban relative imports (use absolute imports instead).",
         )
 
+        parser.add_option(
+            "--ban-backwards-imports",
+            action="store_true",
+            default=False,
+            parse_from_config=True,
+            help="Ban relative imports that import backwards (from ..foo import bar, etc).",
+        )
+
     @classmethod
     def parse_options(cls, options):
         lines = [
@@ -57,13 +65,15 @@ class ImportChecker:
             cls.banned_modules[module] = message
 
         cls.ban_relative_imports = options.ban_relative_imports
+        cls.ban_backwards_imports = options.ban_backwards_imports
 
     message_I250 = "I250 Unnecessary import alias - rewrite as '{}'."
     message_I251 = "I251 Banned import '{name}' used - {msg}."
     message_I252 = "I252 Relative imports are banned."
+    message_I253 = "I253 Backwards imports are banned."
 
     def run(self):
-        rule_funcs = (self.rule_I250, self.rule_I251, self.rule_I252)
+        rule_funcs = (self.rule_I250, self.rule_I251, self.rule_I252, self.rule_I253)
         for node in ast.walk(self.tree):
             for rule_func in rule_funcs:
                 yield from rule_func(node)
@@ -141,6 +151,14 @@ class ImportChecker:
             and node.level != 0
         ):
             yield (node.lineno, node.col_offset, self.message_I252, type(self))
+
+    def rule_I253(self, node):
+        if (
+            self.ban_backwards_imports
+            and isinstance(node, ast.ImportFrom)
+            and node.level >= 2  # two or more dots in "from .. import" statement
+        ):
+            yield (node.lineno, node.col_offset, self.message_I253, type(self))
 
     python2to3_banned_modules = {
         "__builtin__": "use six.moves.builtins as a drop-in replacement",

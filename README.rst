@@ -144,6 +144,16 @@ Absolute imports are recommended by `PEP8 <https://www.python.org/dev/peps/pep-0
 
     Absolute imports are recommended, as they are usually more readable and tend to be better behaved...
 
+I253: Backwards imports are banned.
+----------------------------------
+
+Subset of I252 that only complains about use of backwards imports:
+
+* ``from .. import foo``
+* ``from ..bar import foo``
+
+Needs enabling with ``ban-backwards-imports`` configuration option.
+
 See also
 --------
 
